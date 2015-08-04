@@ -1,0 +1,4 @@
+[telegram]
+# Add the telegram token assigned to your bot here
+token = 1234567890
+
