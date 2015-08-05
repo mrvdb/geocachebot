@@ -22,7 +22,7 @@ def dump(obj):
 
 # Read in the configfile
 config = configparser.SafeConfigParser()
-config.read('geocachebot.cfg')
+config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
 
 # Authorize to telegram
 bot = telegram.Bot(config.get('telegram','token'))
