@@ -8,4 +8,4 @@ Commands:
 
 
 Notes:
-  - As the bot scans for GC codes it nees access to all messages (privacymode is off)
+  - As the bot scans for GC codes it needs access to all messages (privacy-mode is off)
