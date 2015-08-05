@@ -2,3 +2,6 @@
 # Add the telegram token assigned to your bot here
 token = 1234567890
 
+[templates]
+# path to a file which contains the help text display for the /help command
+help=templates/help.cmd

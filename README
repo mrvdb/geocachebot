@@ -11,3 +11,5 @@ Dependencies:
    Framework to talk to the Telegram bot API
 
 
+Roadmap:
+- use webhooks for communication instead of getupdates
