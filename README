@@ -1,4 +1,4 @@
-Creating a Telegram bot that can assist users/groups on geocaching
+A Telegram bot that can assist users/groups on geocaching
 
 Features:
 - watch for GCxxxxx mentions and turn them into something nice
