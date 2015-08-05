@@ -63,7 +63,7 @@ http://coords.info/%s
     return msg.encode('utf-8')
 
 # Util function
-def busy(chat_id):
+def typing(chat_id):
     bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
 
 # Handle the help command
@@ -75,7 +75,7 @@ def HelpCommand(chat_id):
     except Exception as e:
         log.error(e)
         pass
-    busy(chat_id)
+    typing(chat_id)
     bot.sendMessage(chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
 
 # The bot handler
@@ -104,7 +104,7 @@ def handler():
 
                 matches = re.findall(GC_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
                 for gc in matches:
-                    busy(chat_id)
+                    typing(chat_id)
                     try:
                         # Send a formatted cache info message
                         bot.sendMessage(chat_id=chat_id, text=GetCacheInfo(gc),disable_web_page_preview=True)
