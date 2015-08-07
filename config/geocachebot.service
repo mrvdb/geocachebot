@@ -1,0 +1,9 @@
+[Unit]
+Description=Telegram geocache bot
+
+[Service]
+Type=simple
+ExecStart=
+ExecStart=/path/to/bot/geocachebot.py
+Restart=always
+WorkingDirectory=/path/to/bot/
