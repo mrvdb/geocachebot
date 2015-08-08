@@ -12,14 +12,11 @@ import pprint
 import pycaching
 import telegram
 
-# Start logging as soon as possible
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-log = logging.getLogger(__name__)
-log.info("Starting geocache bot implementation...")
 
-# Debug
-def dump(obj):
-    pprint.pprint(vars(obj))
+# Start logging as soon as possible
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
+log.info("Starting geocache bot implementation...")
 
 # Read in the configfile
 config = configparser.SafeConfigParser()
@@ -47,6 +44,11 @@ try:
 except IndexError:
     LAST_UPDATE_ID = None
 
+
+# Debug
+def dump(obj):
+    pprint.pprint(vars(obj))
+
 # Convert value rating to star rating
 # # Example: 3.5 -> 🌑🌑🌑🌓🌕
 def StarRating(rate):
@@ -71,7 +73,8 @@ def ReadTemplate(name):
 # Retrieve and format cache information
 def GetCacheInfo(gc):
     if AUTHENTICATED:
-        # We can retrieve more info
+        # We can retrieve more info, but the method degrades when the
+        # user is not a premium member
         c=geo.load_cache(gc.upper())
         msg = ReadTemplate("cache-full") % (
             c.cache_type, c.wp, c.name,
