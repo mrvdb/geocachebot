@@ -11,5 +11,9 @@ Dependencies:
    Framework to talk to the Telegram bot API
 
 
-Roadmap:
+Ideas for improvement:
+- /wtf TLA -> describes what TLA means (bonus points for editting possibilities)
+  Basically this page: https://www.geocaching.com/about/glossary.aspx but dynamic.
+- activating travel bugs
+- describe scope (commands, detectors etc.)
 - use webhooks for communication instead of getupdates

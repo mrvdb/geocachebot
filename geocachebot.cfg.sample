@@ -12,6 +12,9 @@ cache-quick=templates/cache-quick.tpl
 # Template when trying to fetch as much as possible (needs authentication)
 cache-full=templates/cache-full.tpl
 
+# Template to use when trying to fetch trackable info
+trackable=templates/trackable.tpl
+
 [geocaching]
 # if you want to use this assistant authenticated, here is a place for
 # the username an password for geocaching.com. Note that this may

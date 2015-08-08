@@ -15,7 +15,8 @@ import telegram
 
 # Start logging as soon as possible
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+loglevel=logging.INFO
+log.setLevel(loglevel)
 log.info("Starting geocache bot implementation...")
 
 # Read in the configfile
@@ -23,7 +24,8 @@ config = configparser.SafeConfigParser()
 config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
 
 # Authorize to telegram
-bot = telegram.Bot(config.get('telegram','token'))
+bot = telegram.Bot(config.get('telegram','token'),
+                   debug=True if loglevel==logging.DEBUG else False)
 
 # Connect to geocaching.com
 log.info("Trying to authenticate,..")
@@ -72,7 +74,8 @@ def ReadTemplate(name):
 
 # Retrieve and format cache information
 def GetCacheInfo(gc):
-    if AUTHENTICATED:
+    # Use the quick method, even if authenticated
+    if False and AUTHENTICATED:
         # We can retrieve more info, but the method degrades when the
         # user is not a premium member
         c=geo.load_cache(gc.upper())
@@ -89,6 +92,18 @@ def GetCacheInfo(gc):
             c.size, c.favorites,
             StarRating(c.difficulty), StarRating(c.terrain), c.wp)
     dump(c)
+
+    return msg.encode('utf-8')
+
+def GetTrackableInfo(tb):
+    log.info("Getting info for : %s"  % tb)
+
+    t=geo.load_trackable(tb.upper())
+    dump(t)
+    msg = ReadTemplate("trackable") %(
+        t.type, t.tid, t.name,
+        t.owner, t.location)
+
 
     return msg.encode('utf-8')
 
@@ -121,6 +136,21 @@ def MatchGCs(update):
             bot.sendMessage(chat_id=update.message.chat_id,
                             text=gc.upper() + ': Ouch, cache load failed, I got this: "%s"' %e)
 
+def MatchTBs(update):
+    #Pattern for TB codes?
+    TB_PAT = '(TB[A-Z0-9]{4,5})'
+    matches = re.findall(TB_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
+    for tb in matches:
+        typing(update.message.chat_id)
+        try:
+            bot.sendMessage(chat_id=update.message.chat_id,
+                           text=GetTrackableInfo(tb),disable_web_page_preview=True)
+        except Exception as e:
+            log.error(e)
+            bot.sendMessage(chat_id=update.message.chat_id,
+                            text=tb.upper() + ': Ouch, trackable load failed, I got this: "%s"' % e)
+
+
 # The bot handler
 def handler():
     global LAST_UPDATE_ID
@@ -144,8 +174,11 @@ def handler():
                 # Test for presence of (multiple) GCxxxx patterns
                 MatchGCs(update)
 
+                # Test for presence of (multiple) TBxxxx patterns
+                MatchTBs(update)
+
             # Update the last message seen, even if we don't handle it
-            dump(update.message)
+            # dump(update.message)
             LAST_UPDATE_ID = update.update_id
 
 if __name__ == '__main__':
