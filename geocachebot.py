@@ -2,23 +2,24 @@
 
 '''A little geocache bot helper for Telegram'''
 
-# Start logging as soon as possible
+# System imports
+import time, re, sys
+import configparser
 import logging
+import pprint
+
+# Other packages
+import pycaching
+import telegram
+
+# Start logging as soon as possible
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 log = logging.getLogger(__name__)
 log.info("Starting geocache bot implementation...")
 
-from pycaching import Geocaching
-import telegram
-import time
-import re
-import sys
-import configparser
-
 # Debug
-from pprint import pprint
 def dump(obj):
-    pprint(vars(obj))
+    pprint.pprint(vars(obj))
 
 # Read in the configfile
 config = configparser.SafeConfigParser()
@@ -27,8 +28,17 @@ config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
 # Authorize to telegram
 bot = telegram.Bot(config.get('telegram','token'))
 
-# Connect to geocaching.com (unauthenticated for now)
-geo = Geocaching()
+# Connect to geocaching.com
+log.info("Trying to authenticate,..")
+geo = pycaching.Geocaching()
+AUTHENTICATED=False
+try:
+    geo.login(config.get("geocaching","user"),config.get("geocaching","pass"))
+    AUTHENTICATED=True
+    log.warning("Authenticated as %s" % config.get("geocaching","user"))
+except Exception as e:
+    log.error(e)
+    log.info("Continuing unauthenticated")
 
 # This will be our global variable to keep the latest update_id when requesting
 # for updates. It starts with the latest update_id if available.
@@ -47,18 +57,35 @@ def StarRating(rate):
         e+=HALF
     return e.ljust(5,FILL)
 
+# Read a template
+def ReadTemplate(name):
+    text = 'Error reading %s-template' % name
+    try:
+        with open(config.get("templates", name), "r") as f:
+            text = f.read()
+    except Exception as e:
+        log.error(e)
+
+    return text
+
 # Retrieve and format cache information
 def GetCacheInfo(gc):
-    c = geo.load_cache_quick(gc.upper())
+    if AUTHENTICATED:
+        # We can retrieve more info
+        c=geo.load_cache(gc.upper())
+        msg = ReadTemplate("cache-full") % (
+            c.cache_type, c.wp, c.name,
+            c.size, c.favorites,
+            StarRating(c.difficulty), StarRating(c.terrain),
+            c.location.latitude, c.location.longitude, c.wp)
+    else:
+        # Load what we can as anonymous user
+        c = geo.load_cache_quick(gc.upper())
+        msg = ReadTemplate("cache-quick") %(
+            c.cache_type, c.wp, c.name,
+            c.size, c.favorites,
+            StarRating(c.difficulty), StarRating(c.terrain), c.wp)
     dump(c)
-    msg = '''
-%s %s : %s
-▃▆▉ Size: %s               
-👍 Favorites: %s
-Difficulty: %s  Terrain: %s
-http://coords.info/%s
-''' % (c.cache_type, c.wp, c.name, c.size, c.favorites,
-       StarRating(c.difficulty), StarRating(c.terrain), c.wp)
 
     return msg.encode('utf-8')
 
@@ -68,13 +95,7 @@ def typing(chat_id):
 
 # Handle the help command
 def HelpCommand(chat_id):
-    text = 'No help found'
-    try:
-        with open(config.get("templates","help"),"r") as f:
-            text = f.read()
-    except Exception as e:
-        log.error(e)
-        pass
+    text = ReadTemplate("help")
     typing(chat_id)
     bot.sendMessage(chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
 
@@ -98,7 +119,7 @@ def handler():
                     LAST_UPDATE_ID = update.update_id
                     continue
 
-                # Test for presence of (multiple) GCxxxx pattern
+                # Test for presence of (multiple) GCxxxx patterns
                 # Pattern adapted from: http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
                 GC_PAT = '(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
 
@@ -115,8 +136,9 @@ def handler():
                         # FIXME upstream: LoadError fails because of KeyError
                         bot.sendMessage(chat_id=chat_id, text=gc.upper() + ': load failed, non-existing cache?')
 
-                # Updates global offset to get the new updates
-                LAST_UPDATE_ID = update.update_id
+            # Update the last message seen, even if we don't handle it
+            dump(update.message)
+            LAST_UPDATE_ID = update.update_id
 
 if __name__ == '__main__':
     while True:

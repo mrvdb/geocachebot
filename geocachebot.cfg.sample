@@ -5,3 +5,16 @@ token = 1234567890
 [templates]
 # path to a file which contains the help text display for the /help command
 help=templates/help.cmd
+
+# Template to use when quickly fetching cache info (suitable for anonymous usage)
+cache-quick=templates/cache-quick.tpl
+
+# Template when trying to fetch as much as possible (needs authentication)
+cache-full=templates/cache-full.tpl
+
+[geocaching]
+# if you want to use this assistant authenticated, here is a place for
+# the username an password for geocaching.com. Note that this may
+# violate the user terms, depending on how you use this bot
+user=<geocaching.com username>
+pass=<geocaching.com password>
