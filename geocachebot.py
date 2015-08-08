@@ -132,9 +132,9 @@ def handler():
                     except Exception as e:
                         # Log it
                         log.error(e)
-                        log.debug(sys.exc_info()[0])
+                        log.error(sys.exc_info()[0])
                         # FIXME upstream: LoadError fails because of KeyError
-                        bot.sendMessage(chat_id=chat_id, text=gc.upper() + ': load failed, non-existing cache?')
+                        bot.sendMessage(chat_id=chat_id, text=gc.upper() + ': Ouch, cache load failed, I got this: "%s"' %e)
 
             # Update the last message seen, even if we don't handle it
             dump(update.message)
