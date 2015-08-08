@@ -102,6 +102,25 @@ def HelpCommand(chat_id):
     typing(chat_id)
     bot.sendMessage(chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
 
+def MatchGCs(update):
+    # Pattern adapted from: http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
+    GC_PAT = '(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
+
+    matches = re.findall(GC_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
+    for gc in matches:
+        typing(update.message.chat_id)
+        try:
+            # Send a formatted cache info message
+            bot.sendMessage(chat_id=update.message.chat_id,
+                            text=GetCacheInfo(gc),disable_web_page_preview=True)
+        except Exception as e:
+            # Log it
+            log.error(e)
+            log.error(sys.exc_info()[0])
+            # FIXME upstream: LoadError fails because of KeyError
+            bot.sendMessage(chat_id=update.message.chat_id,
+                            text=gc.upper() + ': Ouch, cache load failed, I got this: "%s"' %e)
+
 # The bot handler
 def handler():
     global LAST_UPDATE_ID
@@ -123,21 +142,7 @@ def handler():
                     continue
 
                 # Test for presence of (multiple) GCxxxx patterns
-                # Pattern adapted from: http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
-                GC_PAT = '(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
-
-                matches = re.findall(GC_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
-                for gc in matches:
-                    typing(chat_id)
-                    try:
-                        # Send a formatted cache info message
-                        bot.sendMessage(chat_id=chat_id, text=GetCacheInfo(gc),disable_web_page_preview=True)
-                    except Exception as e:
-                        # Log it
-                        log.error(e)
-                        log.error(sys.exc_info()[0])
-                        # FIXME upstream: LoadError fails because of KeyError
-                        bot.sendMessage(chat_id=chat_id, text=gc.upper() + ': Ouch, cache load failed, I got this: "%s"' %e)
+                MatchGCs(update)
 
             # Update the last message seen, even if we don't handle it
             dump(update.message)
