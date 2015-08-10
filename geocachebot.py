@@ -14,9 +14,9 @@ import telegram
 
 
 # Start logging as soon as possible
-log = logging.getLogger(__name__)
 loglevel=logging.INFO
-log.setLevel(loglevel)
+logging.basicConfig(level=loglevel)
+log = logging.getLogger(__name__)
 log.info("Starting geocache bot implementation...")
 
 # Read in the configfile
@@ -24,8 +24,7 @@ config = configparser.SafeConfigParser()
 config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
 
 # Authorize to telegram
-bot = telegram.Bot(config.get('telegram','token'),
-                   debug=True if loglevel==logging.DEBUG else False)
+bot = telegram.Bot(config.get('telegram','token'))
 
 # Connect to geocaching.com
 log.info("Trying to authenticate,..")
@@ -137,7 +136,7 @@ def MatchGCs(update):
                             text=gc.upper() + ': Ouch, cache load failed, I got this: "%s"' %e)
 
 def MatchTBs(update):
-    #Pattern for TB codes?
+    #Pattern for TB codes seems to be TB plus 4 or 5 chars
     TB_PAT = '(TB[A-Z0-9]{4,5})'
     matches = re.findall(TB_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
     for tb in matches:
