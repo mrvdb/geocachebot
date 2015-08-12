@@ -94,7 +94,7 @@ def MatchGCs(update):
             log.error(sys.exc_info()[0])
             # FIXME upstream: LoadError fails because of KeyError
             bot.sendMessage(chat_id=update.message.chat_id,
-                            text=gc.upper() + ': Ouch, cache load failed, I got this: "%s"' %e)
+                            text=gc.upper() + ': Ouch, cache load failed, are you sure it exists?')
 
 def MatchTBs(update):
     #Pattern for TB codes seems to be TB plus 4 or 5 chars
@@ -108,7 +108,7 @@ def MatchTBs(update):
         except Exception as e:
             log.error(e)
             bot.sendMessage(chat_id=update.message.chat_id,
-                            text=tb.upper() + ': Ouch, trackable load failed, I got this: "%s"' % e)
+                            text=tb.upper() + ': Ouch, trackable load failed, are you sure it exists?')
 
 # Process one update
 def ProcessUpdate(update):
