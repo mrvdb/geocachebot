@@ -35,4 +35,3 @@ Ideas for improvement:
   Basically this page: https://www.geocaching.com/about/glossary.aspx but dynamic.
 - activate travel bugs should be possible (low usage case though)
 - describe scope (commands, detectors etc.)
-- use webhooks for communication instead of getupdates
