@@ -1,6 +1,7 @@
 A Telegram bot that can assist users/groups on geocaching
 
 Features:
+--------
 - watch for GCxxxxx mentions and turn them into something nice
 
 
@@ -10,10 +11,28 @@ Dependencies:
  - python-telegram-bot: https://github.com/leandrotoledo/python-telegram-bot
    Framework to talk to the Telegram bot API
 
+Installation / Configuration:
+----------------------------
+Copy the geocachebot.cfg.sample to geocachebot.cfg and fill in the
+appropriate details. Most notabley your Telegram TOKEN needs to be
+filled in.
+
+The defaults for the templates should give you a working bot withouth
+having to change them.
+
+If you want to run the bot authenticated, which may or may not be
+against the geocaching.com terms of service, a user and password can
+be specified in the [geocaching] section.
+
+In the 'config' folder there is a systemd unit file for running the
+bot under systemd regime. If you use systemd's feature for running
+user services, do not forget to enable 'lingering' for your user,
+otherwise the process will be stopped after your user session ends.
 
 Ideas for improvement:
+---------------------
 - /wtf TLA -> describes what TLA means (bonus points for editting possibilities)
   Basically this page: https://www.geocaching.com/about/glossary.aspx but dynamic.
-- activating travel bugs
+- activate travel bugs should be possible (low usage case though)
 - describe scope (commands, detectors etc.)
 - use webhooks for communication instead of getupdates
