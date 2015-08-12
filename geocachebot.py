@@ -84,38 +84,41 @@ def StartCommand(update):
 def HelpCommand(update):
     SimpleTemplate("help", update.message.chat_id)
 
+# Match a regular expression in an update and return a formatted text
+def MatchRegEx(update, pattern, formatCallback):
+    matches = re.findall(pattern, update.message.text, re.IGNORECASE + re.UNICODE)
+
+    for match in matches:
+        typing(update.message.chat_id)
+        try:
+            # Send a formatted info message
+            bot.sendMessage(chat_id=update.message.chat_id,
+                           text=formatCallback(match), disable_web_page_preview=True)
+        except pycaching.errors.NotLoggedInException:
+            bot.sendMessage(chat_id=update.message.chat_id,
+                           text=match.upper() + ': for trackable matching, the bot needs to be logged in to geocaching.com')
+            pass
+        except Exception as e:
+            log.error(e)
+            log.error(sys.exc_info()[0])
+            bot.sendMessage(chat_id=update.message.chat_id,
+                           text=match.upper() + ': Ouch, load failed, are you sure it exists?')
+
+
 def MatchGCs(update):
     # Pattern adapted from: http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
     GC_PAT = '(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
 
-    matches = re.findall(GC_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
-    for gc in matches:
-        typing(update.message.chat_id)
-        try:
-            # Send a formatted cache info message
-            bot.sendMessage(chat_id=update.message.chat_id,
-                            text=GetCacheInfo(gc),disable_web_page_preview=True)
-        except Exception as e:
-            # Log it
-            log.error(e)
-            log.error(sys.exc_info()[0])
-            # FIXME upstream: LoadError fails because of KeyError
-            bot.sendMessage(chat_id=update.message.chat_id,
-                            text=gc.upper() + ': Ouch, cache load failed, are you sure it exists?')
+    MatchRegEx(update, GC_PAT, GetCacheInfo)
 
 def MatchTBs(update):
     #Pattern for TB codes seems to be TB plus 4 or 5 chars
     TB_PAT = '(TB[A-Z0-9]{4,5})'
-    matches = re.findall(TB_PAT, update.message.text, re.IGNORECASE+re.UNICODE)
-    for tb in matches:
-        typing(update.message.chat_id)
-        try:
-            bot.sendMessage(chat_id=update.message.chat_id,
-                           text=GetTrackableInfo(tb),disable_web_page_preview=True)
-        except Exception as e:
-            log.error(e)
-            bot.sendMessage(chat_id=update.message.chat_id,
-                            text=tb.upper() + ': Ouch, trackable load failed, are you sure it exists?')
+
+    MatchRegEx(update, TB_PAT, GetTrackableInfo)
+
+
+
 
 # Process one update
 def ProcessUpdate(update):
