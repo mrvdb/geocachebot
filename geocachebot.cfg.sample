@@ -1,15 +1,35 @@
 [telegram]
 # Add the telegram token assigned to your bot here
-token = 1234567890
+token <your assigned TOKEN>
+
+[responder]
+# Configuration of the part of the bot that responds to the POST
+# requests
+
+# at what interface should the bot list, this defaults to 127.0.0.1
+# which means only local clients can access it. Use 0.0.0.0 or a
+# specific interface address for public access. This also depends on
+# how the bot is deployed.
+address = 127.0.0.1
+
+# On which port should we listen.
+port = 5000
+
+# What host are we on, this is used to construct the endpoint to which
+# telegram can send POST requests with the updates.
+host = mybot.mydomain.com
 
 [templates]
-# path to a file which contains the help text display for the /help command
+# path to a file which contains the help text display for the /help
+# command
 help=templates/help.cmd
 
-# Template to use when quickly fetching cache info (suitable for anonymous usage)
+# Template to use when quickly fetching cache info (suitable for
+# anonymous usage)
 cache-quick=templates/cache-quick.tpl
 
-# Template when trying to fetch as much as possible (needs authentication)
+# Template when trying to fetch as much as possible (needs
+# authentication)
 cache-full=templates/cache-full.tpl
 
 # Template to use when trying to fetch trackable info

@@ -6,49 +6,13 @@
 import time, re, sys
 import configparser
 import logging
-import pprint
 
 # Other packages
 import pycaching
 import telegram
 
-
-# Start logging as soon as possible
-loglevel=logging.INFO
-logging.basicConfig(level=loglevel)
-log = logging.getLogger(__name__)
-log.info("Starting geocache bot implementation...")
-
-# Read in the configfile
-config = configparser.SafeConfigParser()
-config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
-
-# Authorize to telegram
-bot = telegram.Bot(config.get('telegram','token'))
-
-# Connect to geocaching.com
-log.info("Trying to authenticate,..")
-geo = pycaching.Geocaching()
-AUTHENTICATED=False
-try:
-    geo.login(config.get("geocaching","user"),config.get("geocaching","pass"))
-    AUTHENTICATED=True
-    log.warning("Authenticated as %s" % config.get("geocaching","user"))
-except Exception as e:
-    log.error(e)
-    log.info("Continuing unauthenticated")
-
-# This will be our global variable to keep the latest update_id when requesting
-# for updates. It starts with the latest update_id if available.
-try:
-    LAST_UPDATE_ID = bot.getUpdates()[-1].update_id
-except IndexError:
-    LAST_UPDATE_ID = None
-
-
-# Debug
-def dump(obj):
-    pprint.pprint(vars(obj))
+# Our libs
+from responder import BotResponder
 
 # Convert value rating to star rating
 # # Example: 3.5 -> 🌑🌑🌑🌓🌕
@@ -74,7 +38,7 @@ def ReadTemplate(name):
 # Retrieve and format cache information
 def GetCacheInfo(gc):
     # Use the quick method, even if authenticated
-    if False and AUTHENTICATED:
+    if False and geo.get_logged_user():
         # We can retrieve more info, but the method degrades when the
         # user is not a premium member
         c=geo.load_cache(gc.upper())
@@ -90,8 +54,7 @@ def GetCacheInfo(gc):
             c.cache_type, c.wp, c.name,
             c.size, c.favorites,
             StarRating(c.difficulty), StarRating(c.terrain), c.wp)
-    dump(c)
-
+    logging.debug(c)
     return msg.encode('utf-8')
 
 def GetTrackableInfo(tb):
@@ -102,8 +65,6 @@ def GetTrackableInfo(tb):
     msg = ReadTemplate("trackable") %(
         t.type, t.tid, t.name,
         t.owner, t.location)
-
-
     return msg.encode('utf-8')
 
 # Util function
@@ -111,10 +72,10 @@ def typing(chat_id):
     bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
 
 # Handle the help command
-def HelpCommand(chat_id):
+def HelpCommand(update):
     text = ReadTemplate("help")
-    typing(chat_id)
-    bot.sendMessage(chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
+    typing(update.message.chat_id)
+    bot.sendMessage(update.message.chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
 
 def MatchGCs(update):
     # Pattern adapted from: http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
@@ -149,39 +110,54 @@ def MatchTBs(update):
             bot.sendMessage(chat_id=update.message.chat_id,
                             text=tb.upper() + ': Ouch, trackable load failed, I got this: "%s"' % e)
 
+# Process one update
+def ProcessUpdate(update):
+    assert(isinstance(update, telegram.Update))
+    update_id = update['update_id']
 
-# The bot handler
-def handler():
-    global LAST_UPDATE_ID
+    logging.info('Processing %d' % update_id )
+    if (update.message.text) :
+        log.debug("Message received: %s", update.message.text)
 
-    # Request updates from last updated_id
-    for update in bot.getUpdates(offset=LAST_UPDATE_ID):
-        if LAST_UPDATE_ID < update.update_id:
-            # chat_id is required to reply any message
-            chat_id = update.message.chat_id
+        # Help command
+        if update.message.text.startswith('/help'):
+            log.debug("Command: help")
+            HelpCommand(update)
 
-            if (update.message.text):
-                log.debug("Message received: %s",update.message.text)
+        # Test for presence of (multiple) GCxxxx patterns
+        MatchGCs(update)
 
-                # Help command
-                if update.message.text.startswith('/help'):
-                    log.debug("Command: help")
-                    HelpCommand(chat_id)
-                    LAST_UPDATE_ID = update.update_id
-                    continue
+        # Test for presence of (multiple) TBxxxx patterns
+        MatchTBs(update)
 
-                # Test for presence of (multiple) GCxxxx patterns
-                MatchGCs(update)
-
-                # Test for presence of (multiple) TBxxxx patterns
-                MatchTBs(update)
-
-            # Update the last message seen, even if we don't handle it
-            # dump(update.message)
-            LAST_UPDATE_ID = update.update_id
 
 if __name__ == '__main__':
-    while True:
-        # Call the handler here
-        handler()
-        time.sleep(3)
+    # Start logging as soon as possible
+    loglevel=logging.INFO
+    logging.basicConfig(level=loglevel)
+    log = logging.getLogger(__name__)
+    log.info("Starting geocache bot implementation...")
+
+    # Read in the configfile
+    config = configparser.SafeConfigParser()
+    config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
+
+    # Create our bot
+    bot = telegram.Bot(config.get('telegram','token'))
+
+    # Connect to geocaching.com
+    geo = pycaching.Geocaching()
+    try:
+        geo.login(config.get("geocaching","user"),config.get("geocaching","pass"))
+        log.warning("Authenticated as %s" % config.get("geocaching","user"))
+    except Exception as e:
+        log.warning(e)
+        log.info("Continuing unauthenticated")
+
+    # The responder is our main process
+    resp = BotResponder(bot, config)
+    resp.setHandler(ProcessUpdate)
+
+    # Run it
+    resp.run(host=config.get('responder','address'),
+             port=config.getint('responder','port'))
