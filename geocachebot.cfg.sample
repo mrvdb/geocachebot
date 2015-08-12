@@ -20,8 +20,9 @@ port = 5000
 host = mybot.mydomain.com
 
 [templates]
-# path to a file which contains the help text display for the /help
-# command
+# path to a file which contains the start and help text display for
+# the /start and /help command respectively
+start=templates/start.cmd
 help=templates/help.cmd
 
 # Template to use when quickly fetching cache info (suitable for

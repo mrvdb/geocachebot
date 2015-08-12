@@ -71,11 +71,18 @@ def GetTrackableInfo(tb):
 def typing(chat_id):
     bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
 
+def SimpleTemplate(name, chat_id):
+    text = ReadTemplate(name)
+    typing(chat_id)
+    bot.sendMessage(chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
+
+# Handle the start command
+def StartCommand(update):
+    SimpleTemplate("start", update.message.chat_id)
+
 # Handle the help command
 def HelpCommand(update):
-    text = ReadTemplate("help")
-    typing(update.message.chat_id)
-    bot.sendMessage(update.message.chat_id, text=text.encode('utf-8'), disable_web_page_preview=True)
+    SimpleTemplate("help", update.message.chat_id)
 
 def MatchGCs(update):
     # Pattern adapted from: http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
@@ -119,10 +126,17 @@ def ProcessUpdate(update):
     if (update.message.text) :
         log.debug("Message received: %s", update.message.text)
 
+        # Start command
+        if update.message.text.startswith('/start'):
+            log.debug("Command: start")
+            StartCommand(update)
+            return
+
         # Help command
         if update.message.text.startswith('/help'):
             log.debug("Command: help")
             HelpCommand(update)
+            return
 
         # Test for presence of (multiple) GCxxxx patterns
         MatchGCs(update)
