@@ -61,7 +61,7 @@ def GetTrackableInfo(tb):
     log.info("Getting info for : %s"  % tb)
 
     t=geo.load_trackable(tb.upper())
-    dump(t)
+
     msg = ReadTemplate("trackable") %(
         t.type, t.tid, t.name,
         t.owner, t.location)
