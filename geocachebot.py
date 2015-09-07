@@ -84,7 +84,7 @@ def SimpleTemplate(name, chat_id):
     text = ReadTemplate(name)
     typing(chat_id)
     bot.sendMessage(
-        chat_id,
+        chat_id=chat_id,
         text=text.encode('utf-8'),
         disable_web_page_preview=True)
 
