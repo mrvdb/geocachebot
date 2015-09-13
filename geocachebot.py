@@ -49,17 +49,17 @@ def GetCacheInfo(gc):
         # user is not a premium member
         c = geo.load_cache(gc.upper())
         msg = ReadTemplate("cache-full") % (
-            c.cache_type, c.wp, c.name,
+            c.cache_type, c.wp, c.name, c.wp,
             c.size, c.favorites,
             StarRating(c.difficulty), StarRating(c.terrain),
-            c.location.latitude, c.location.longitude, c.wp)
+            c.location.latitude, c.location.longitude)
     else:
         # Load what we can as anonymous user
         c = geo.load_cache_quick(gc.upper())
         msg = ReadTemplate("cache-quick") % (
-            c.cache_type, c.wp, c.name,
+            c.cache_type, c.wp, c.name, c.wp,
             c.size, c.favorites,
-            StarRating(c.difficulty), StarRating(c.terrain), c.wp)
+            StarRating(c.difficulty), StarRating(c.terrain))
     logging.debug(c)
     return msg
 
