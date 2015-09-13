@@ -1,3 +1,3 @@
-%s %s : %s
-Owner: %s
-Location: %s
+$type $code : $name
+Owner: $owner
+Location: $location

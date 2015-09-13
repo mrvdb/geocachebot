@@ -2,18 +2,20 @@
 
 '''A little geocache bot helper for Telegram'''
 
-# Our libs
-from responder import BotResponder
 
 # System imports
 import re
 import sys
 import configparser
 import logging
+from string import Template
 
 # Other packages
 import pycaching
 import telegram
+
+# Our libs
+from responder import BotResponder
 
 
 # Convert value rating to star rating
@@ -30,7 +32,7 @@ def StarRating(rate):
 
 
 # Read a template
-def ReadTemplate(name):
+def ReadTemplate(name, data=None):
     text = 'Error reading %s-template' % name
     try:
         with open(config.get("templates", name), "r") as f:
@@ -38,7 +40,7 @@ def ReadTemplate(name):
     except Exception as e:
         log.error(e)
 
-    return text
+    return Template(text).safe_substitute(data)
 
 
 # Retrieve and format cache information
@@ -48,18 +50,23 @@ def GetCacheInfo(gc):
         # We can retrieve more info, but the method degrades when the
         # user is not a premium member
         c = geo.load_cache(gc.upper())
-        msg = ReadTemplate("cache-full") % (
-            c.cache_type, c.wp, c.name, c.wp,
-            c.size, c.favorites,
-            StarRating(c.difficulty), StarRating(c.terrain),
-            c.location.latitude, c.location.longitude)
+        data = dict(
+            type=c.cache_type, code=c.wp, name=c.name,
+            size=c.size, favorites=c.favorites,
+            diff=StarRating(c.difficulty), terrain=StarRating(c.terrain),
+            lat=c.location.latitude, long=c.location.longitude)
+        template = "cache-full"
     else:
         # Load what we can as anonymous user
         c = geo.load_cache_quick(gc.upper())
-        msg = ReadTemplate("cache-quick") % (
-            c.cache_type, c.wp, c.name, c.wp,
-            c.size, c.favorites,
-            StarRating(c.difficulty), StarRating(c.terrain))
+        data = dict(
+            type=c.cache_type, code=c.wp, name=c.name,
+            size=c.size, favorites=c.favorites,
+            diff=StarRating(c.difficulty), terrain=StarRating(c.terrain))
+        template = "cache-quick"
+
+    # Render it
+    msg = ReadTemplate(template, data)
     logging.debug(c)
     return msg
 
@@ -68,10 +75,10 @@ def GetTrackableInfo(tb):
     log.info("Getting info for : %s" % tb)
 
     t = geo.load_trackable(tb.upper())
-
-    msg = ReadTemplate("trackable") % (
-        t.type, t.tid, t.name,
-        t.owner, t.location)
+    data = dict(
+        type=t.type, code=t.tid, name=t.name,
+        owner=t.owner, location=t.location)
+    return ReadTemplate("trackable", data)
     return msg
 
 
