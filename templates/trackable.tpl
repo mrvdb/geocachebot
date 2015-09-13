@@ -1,3 +1,3 @@
-$type $code : $name
-Owner: $owner
-Location: $location
+$type $code : [$name](http://coord.info/$code)
+*Owner* : $owner
+*Location*: $location
