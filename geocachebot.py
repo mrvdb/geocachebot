@@ -61,7 +61,7 @@ def GetCacheInfo(gc):
             c.size, c.favorites,
             StarRating(c.difficulty), StarRating(c.terrain), c.wp)
     logging.debug(c)
-    return msg.encode('utf-8')
+    return msg
 
 
 def GetTrackableInfo(tb):
@@ -72,7 +72,7 @@ def GetTrackableInfo(tb):
     msg = ReadTemplate("trackable") % (
         t.type, t.tid, t.name,
         t.owner, t.location)
-    return msg.encode('utf-8')
+    return msg
 
 
 # Util function
@@ -85,7 +85,8 @@ def SimpleTemplate(name, chat_id):
     typing(chat_id)
     bot.sendMessage(
         chat_id=chat_id,
-        text=text.encode('utf-8'),
+        text=text,
+        parse_mode=telegram.ParseMode.MARKDOWN,
         disable_web_page_preview=True)
 
 
@@ -113,11 +114,12 @@ def MatchRegEx(update, pattern, formatCallback):
             bot.sendMessage(
                 chat_id=update.message.chat_id,
                 text=formatCallback(match),
+                parse_mode=telegram.ParseMode.MARKDOWN,
                 disable_web_page_preview=True)
         except pycaching.errors.NotLoggedInException:
             bot.sendMessage(
                 chat_id=update.message.chat_id,
-                text=match.upper() + ': for trackable matching, the bot needs to be logged in to geocaching.com')
+                text=match.upper() + ': for trackables, the bot needs to be logged in to geocaching.com')
             pass
         except Exception as e:
             log.error(e)
