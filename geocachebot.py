@@ -13,9 +13,7 @@ from string import Template
 # Other packages
 import pycaching
 import telegram
-
-# Our libs
-from responder import BotResponder
+from telegram import Updater
 
 
 # Convert value rating to star rating
@@ -85,13 +83,13 @@ def GetTrackableInfo(tb):
 
 
 # Util function
-def typing(chat_id):
+def typing(bot, chat_id):
     bot.sendChatAction(chat_id=chat_id, action=telegram.ChatAction.TYPING)
 
 
-def SimpleTemplate(name, chat_id):
+def SimpleTemplate(bot, name, chat_id):
     text = ReadTemplate(name)
-    typing(chat_id)
+    typing(bot, chat_id)
     bot.sendMessage(
         chat_id=chat_id,
         text=text,
@@ -100,24 +98,24 @@ def SimpleTemplate(name, chat_id):
 
 
 # Handle the start command
-def StartCommand(update):
-    SimpleTemplate("start", update.message.chat_id)
+def StartCommand(bot, update):
+    SimpleTemplate(bot, "start", update.message.chat_id)
 
 
 # Handle the help command
-def HelpCommand(update):
-    SimpleTemplate("help", update.message.chat_id)
+def HelpCommand(bot, update):
+    SimpleTemplate(bot, "help", update.message.chat_id)
 
 
 # Match a regular expression in an update and return a formatted text
-def MatchRegEx(update, pattern, formatCallback):
+def MatchRegEx(bot, update, pattern, formatCallback):
     matches = re.findall(
         pattern,
         update.message.text,
         re.IGNORECASE + re.UNICODE)
 
     for match in matches:
-        typing(update.message.chat_id)
+        typing(bot, update.message.chat_id)
         try:
             # Send a formatted info message
             bot.sendMessage(
@@ -138,48 +136,23 @@ def MatchRegEx(update, pattern, formatCallback):
                 text=match.upper() + ': Ouch, load failed, are you sure it exists?')
 
 
-def MatchGCs(update):
+def MatchGCs(bot, update):
     # Pattern adapted from:
     # http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
     GC_PAT='(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
 
-    MatchRegEx(update, GC_PAT, GetCacheInfo)
+    MatchRegEx(bot, update, GC_PAT, GetCacheInfo)
 
 
-def MatchTBs(update):
+def MatchTBs(bot, update):
     # Pattern for TB codes seems to be TB plus 4 or 5 chars
     TB_PAT = '(TB[A-Z0-9]{4,5})'
 
-    MatchRegEx(update, TB_PAT, GetTrackableInfo)
+    MatchRegEx(bot, update, TB_PAT, GetTrackableInfo)
 
 
-# Process one update
-def ProcessUpdate(update):
-    assert(isinstance(update, telegram.Update))
-    update_id = update['update_id']
-
-    logging.info('Processing %d' % update_id)
-    if (update.message.text):
-        log.debug("Message received: %s", update.message.text)
-
-        # Start command
-        if update.message.text.startswith('/start'):
-            log.debug("Command: start")
-            StartCommand(update)
-            return
-
-        # Help command
-        if update.message.text.startswith('/help'):
-            log.debug("Command: help")
-            HelpCommand(update)
-            return
-
-        # Test for presence of (multiple) GCxxxx patterns
-        MatchGCs(update)
-
-        # Test for presence of (multiple) TBxxxx patterns
-        MatchTBs(update)
-
+def error(bot, update, error):
+    logging.error('Update "%s" caused error "%s"' % (update, error))
 
 if __name__ == '__main__':
     # Start logging as soon as possible
@@ -192,9 +165,6 @@ if __name__ == '__main__':
     config = configparser.SafeConfigParser()
     config.read('geocachebot.cfg') or exit("FATAL: config file reading failed")
 
-    # Create our bot
-    bot = telegram.Bot(config.get('telegram', 'token'))
-
     # Connect to geocaching.com
     geo = pycaching.Geocaching()
     try:
@@ -206,11 +176,24 @@ if __name__ == '__main__':
         log.warning(e)
         log.info("Continuing unauthenticated")
 
-    # The responder is our main process
-    resp = BotResponder(bot, config)
-    resp.setHandler(ProcessUpdate)
+    # The updater is the main process
+    updater = Updater(token=config.get('telegram', 'token'))
+    dp = updater.dispatcher
+
+    # Add our commands and message parser thingies
+    # Commands
+    dp.addTelegramCommandHandler('start', StartCommand)
+    dp.addTelegramCommandHandler('help',  HelpCommand)
+
+    # Message handlers
+    dp.addTelegramMessageHandler(MatchGCs)
+    dp.addTelegramMessageHandler(MatchTBs)
+
+    # Error handler
+    dp.addErrorHandler(error)
 
     # Run it
-    resp.run(
-        host=config.get('responder', 'address'),
-        port=config.getint('responder', 'port'))
+    update_queue = updater.start_webhook(
+        url_path=config.get('telegram', 'token'),
+        port=config.getint('responder', 'port'),
+        listen=config.get('responder', 'address'))
