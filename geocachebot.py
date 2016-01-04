@@ -45,22 +45,24 @@ def ReadTemplate(name, data=None):
 
 # Retrieve and format cache information
 def GetCacheInfo(gc):
-    # Use the quick method, even if authenticated
+    # Lazy load the cache
+    c = geo.get_cache(gc.upper())
+
+    # Not using logged in feature for now
     if False and geo.get_logged_user():
         # We can retrieve more info, but the method degrades when the
         # user is not a premium member
-        c = geo.load_cache(gc.upper())
         data = dict(
-            type=c.cache_type, code=c.wp, name=c.name,
+            type=c.type, code=c.wp, name=c.name,
             size=c.size, favorites=c.favorites,
             diff=StarRating(c.difficulty), terrain=StarRating(c.terrain),
             lat=c.location.latitude, long=c.location.longitude)
         template = "cache-full"
     else:
         # Load what we can as anonymous user
-        c = geo.load_cache_quick(gc.upper())
+        c.load_quick()
         data = dict(
-            type=c.cache_type, code=c.wp, name=c.name,
+            type=c.type, code=c.wp, name=c.name,
             size=c.size, favorites=c.favorites,
             diff=StarRating(c.difficulty), terrain=StarRating(c.terrain))
         template = "cache-quick"
@@ -74,12 +76,12 @@ def GetCacheInfo(gc):
 def GetTrackableInfo(tb):
     log.info("Getting info for : %s" % tb)
 
-    t = geo.load_trackable(tb.upper())
+    t = geo.get_trackable(tb.upper())
+
     data = dict(
         type=t.type, code=t.tid, name=t.name,
         owner=t.owner, location=t.location)
     return ReadTemplate("trackable", data)
-    return msg
 
 
 # Util function
@@ -181,7 +183,7 @@ def ProcessUpdate(update):
 
 if __name__ == '__main__':
     # Start logging as soon as possible
-    loglevel = logging.INFO
+    loglevel = logging.DEBUG
     logging.basicConfig(level=loglevel)
     log = logging.getLogger(__name__)
     log.info("Starting geocache bot implementation...")
