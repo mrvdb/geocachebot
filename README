@@ -14,7 +14,7 @@ Dependencies:
 Installation / Configuration:
 ----------------------------
 Copy the geocachebot.cfg.sample to geocachebot.cfg and fill in the
-appropriate details. Most notabley your Telegram TOKEN needs to be
+appropriate details. Most notably your Telegram TOKEN needs to be
 filled in.
 
 The defaults for the templates should give you a working bot withouth
@@ -31,7 +31,9 @@ otherwise the process will be stopped after your user session ends.
 
 Ideas for improvement:
 ---------------------
-- /wtf TLA -> describes what TLA means (bonus points for editting possibilities)
+- Command: /wtf TLA -> describes what TLA means (bonus points for editting possibilities)
   Basically this page: https://www.geocaching.com/about/glossary.aspx but dynamic.
 - activate travel bugs should be possible (low usage case though)
 - describe scope (commands, detectors etc.)
+- display nearest cache for user
+- show log entries from a cache, bonus points for adding a log entry.
