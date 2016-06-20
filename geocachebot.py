@@ -13,7 +13,7 @@ from string import Template
 # Other packages
 import pycaching
 import telegram
-from telegram import Updater
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
 
 # Convert value rating to star rating
@@ -182,15 +182,15 @@ if __name__ == '__main__':
 
     # Add our commands and message parser thingies
     # Commands
-    dp.addTelegramCommandHandler('start', StartCommand)
-    dp.addTelegramCommandHandler('help',  HelpCommand)
+    dp.add_handler(CommandHandler('start', StartCommand))
+    dp.add_handler(CommandHandler('help',  HelpCommand))
 
     # Message handlers
-    dp.addTelegramMessageHandler(MatchGCs)
-    dp.addTelegramMessageHandler(MatchTBs)
+    dp.add_handler(MessageHandler([Filters.text], MatchGCs))
+    dp.add_handler(MessageHandler([Filters.text], MatchTBs))
 
     # Error handler
-    dp.addErrorHandler(error)
+    dp.add_error_handler(error)
 
     # Run it
     update_queue = updater.start_webhook(
