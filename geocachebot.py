@@ -186,8 +186,8 @@ if __name__ == '__main__':
     dp.add_handler(CommandHandler('help',  HelpCommand))
 
     # Message handlers
-    dp.add_handler(MessageHandler([Filters.text], MatchGCs))
-    dp.add_handler(MessageHandler([Filters.text], MatchTBs))
+    dp.add_handler(MessageHandler([Filters.text], MatchGCs),0)
+    dp.add_handler(MessageHandler([Filters.text], MatchTBs),1)
 
     # Error handler
     dp.add_error_handler(error)
