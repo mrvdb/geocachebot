@@ -4,8 +4,6 @@
 
 
 # System imports
-import re
-import sys
 import configparser
 import logging
 from string import Template
@@ -13,7 +11,17 @@ from string import Template
 # Other packages
 import pycaching
 import telegram
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    RegexHandler)
+
+# Pattern adapted from:
+# http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
+GC_PAT = '(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
+
+# Pattern for TB codes seems to be TB plus 4 or 5 chars
+TB_PAT = '(TB[A-Z0-9]{4,5})'
 
 
 # Convert value rating to star rating
@@ -74,12 +82,19 @@ def GetCacheInfo(gc):
 def GetTrackableInfo(tb):
     log.info("Getting info for : %s" % tb)
 
-    t = geo.get_trackable(tb.upper())
+    try:
+        t = geo.get_trackable(tb.upper())
 
-    data = dict(
-        type=t.type, code=t.tid, name=t.name,
-        owner=t.owner, location=t.location)
-    return ReadTemplate("trackable", data)
+        data = dict(
+            type=t.type, code=t.tid, name=t.name,
+            owner=t.owner, location=t.location)
+        text = ReadTemplate("trackable", data)
+    except pycaching.errors.NotLoggedInException:
+        text = tb.upper() + ': for trackables, the bot needs to be logged in to geocaching.com'
+    except Exception as e:
+        text = tb.upper() + ': could not be found. Does it really exist?'
+
+    return text
 
 
 # Util function
@@ -107,48 +122,33 @@ def HelpCommand(bot, update):
     SimpleTemplate(bot, "help", update.message.chat_id)
 
 
-# Match a regular expression in an update and return a formatted text
-def MatchRegEx(bot, update, pattern, formatCallback):
-    matches = re.findall(
-        pattern,
-        update.message.text,
-        re.IGNORECASE + re.UNICODE)
+# Handle detected GC code
+def HandleGCs(bot, update, groups):
+    gc = groups[0]
+    log.info("GC code '%s' detected", gc)
 
-    for match in matches:
-        typing(bot, update.message.chat_id)
-        try:
-            # Send a formatted info message
-            bot.sendMessage(
-                chat_id=update.message.chat_id,
-                text=formatCallback(match),
-                parse_mode=telegram.ParseMode.MARKDOWN,
-                disable_web_page_preview=True)
-        except pycaching.errors.NotLoggedInException:
-            bot.sendMessage(
-                chat_id=update.message.chat_id,
-                text=match.upper() + ': for trackables, the bot needs to be logged in to geocaching.com')
-            pass
-        except Exception as e:
-            log.error(e)
-            log.error(sys.exc_info()[0])
-            bot.sendMessage(
-                chat_id=update.message.chat_id,
-                text=match.upper() + ': Ouch, load failed, are you sure it exists?')
+    # Send either err msg or GC info
+    typing(bot, update.message.chat_id)
+    bot.sendMessage(
+        chat_id=update.message.chat_id,
+        text=GetCacheInfo(gc),
+        parse_mode=telegram.ParseMode.MARKDOWN,
+        disable_web_page_preview=True)
 
 
-def MatchGCs(bot, update):
-    # Pattern adapted from:
-    # http://eeecacher.blogspot.dk/2012/11/geocaching-gc-code-regex.htm
-    GC_PAT='(GC[A-HJKMNPQRTV-Z0-9]{5}|GC[A-F0-9]{1,4}|GC[GHJKMNPQRTV-Z][A-HJKMNPQRTV-Z0-9]{3})'
+# Handle detected TC code
+def HandleTBs(bot, update, groups):
+    tb = groups[0]
+    chat_id = update.message.chat_id
+    log.info("TB code '%s' detected", tb)
 
-    MatchRegEx(bot, update, GC_PAT, GetCacheInfo)
-
-
-def MatchTBs(bot, update):
-    # Pattern for TB codes seems to be TB plus 4 or 5 chars
-    TB_PAT = '(TB[A-Z0-9]{4,5})'
-
-    MatchRegEx(bot, update, TB_PAT, GetTrackableInfo)
+    # Send either err msg or TB info
+    typing(bot, chat_id)
+    bot.sendMessage(
+        chat_id=chat_id,
+        text=GetTrackableInfo(tb),
+        parse_mode=telegram.ParseMode.MARKDOWN,
+        disable_web_page_preview=True)
 
 
 def error(bot, update, error):
@@ -186,8 +186,8 @@ if __name__ == '__main__':
     dp.add_handler(CommandHandler('help',  HelpCommand))
 
     # Message handlers
-    dp.add_handler(MessageHandler([Filters.text], MatchGCs),0)
-    dp.add_handler(MessageHandler([Filters.text], MatchTBs),1)
+    dp.add_handler(RegexHandler(GC_PAT, HandleGCs, pass_groups=True), 0)
+    dp.add_handler(RegexHandler(TB_PAT, HandleTBs, pass_groups=True), 1)
 
     # Error handler
     dp.add_error_handler(error)
