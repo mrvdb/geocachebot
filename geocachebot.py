@@ -193,7 +193,13 @@ if __name__ == '__main__':
     dp.add_error_handler(error)
 
     # Run it
+    token = config.get('telegram', 'token')
+    host  = config.get('responder', 'host')
+
     update_queue = updater.start_webhook(
-        url_path=config.get('telegram', 'token'),
+        url_path=token,
         port=config.getint('responder', 'port'),
         listen=config.get('responder', 'address'))
+
+    webhook_url = 'https://{host}/{token}'.format(host=host, token=token)
+    updater.bot.set_webhook(webhook_url)

@@ -17,7 +17,7 @@ Copy the geocachebot.cfg.sample to geocachebot.cfg and fill in the
 appropriate details. Most notably your Telegram TOKEN needs to be
 filled in.
 
-The defaults for the templates should give you a working bot withouth
+The defaults for the templates should give you a working bot without
 having to change them.
 
 If you want to run the bot authenticated, which may or may not be
